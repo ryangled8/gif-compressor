@@ -1,0 +1,29 @@
+{
+  "name": "gifcompress",
+  "version": "1.0.0",
+  "description": "Creator-friendly GIF compression CLI — Tailwind for FFmpeg",
+  "type": "commonjs",
+  "bin": {
+    "gc": "./bin/gc.js"
+  },
+  "scripts": {
+    "test": "node bin/gc.js --help"
+  },
+  "keywords": [
+    "gif",
+    "compress",
+    "ffmpeg",
+    "cli",
+    "video",
+    "convert"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^12.0.0",
+    "prompts": "^2.4.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
