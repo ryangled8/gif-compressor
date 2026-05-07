@@ -270,7 +270,7 @@ const program = new Command();
 
 program
   .name("gc")
-  .description("Creator-friendly GIF compression — Tailwind for FFmpeg")
+  .description("Creator-friendly GIF compression CLI — built on top of FFmpeg")
   .version("1.0.0");
 
 // ── Main compress command: gc <input> <preset> [options]

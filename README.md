@@ -1,6 +1,6 @@
 # gifcompress (`gc`)
 
-> Creator-friendly GIF compression — Tailwind for FFmpeg.
+> Creator-friendly GIF compression CLI — built on top of FFmpeg
 
 Turn any video into a high-quality compressed GIF using simple, memorable commands. No FFmpeg knowledge required.
 
@@ -13,11 +13,13 @@ Turn any video into a high-quality compressed GIF using simple, memorable comman
 This tool requires FFmpeg to be installed on your machine. It is **not** bundled.
 
 **Mac:**
+
 ```bash
 brew install ffmpeg
 ```
 
 **Ubuntu / Debian:**
+
 ```bash
 sudo apt install ffmpeg
 ```
@@ -26,6 +28,7 @@ sudo apt install ffmpeg
 Download from [ffmpeg.org/download.html](https://ffmpeg.org/download.html) and add to your PATH.
 
 Verify your install:
+
 ```bash
 ffmpeg -version
 ```
@@ -46,6 +49,7 @@ npm install -g .
 ```
 
 Verify the install:
+
 ```bash
 gc --help
 ```
@@ -85,14 +89,14 @@ Done → demo-medium.gif
 
 Presets are the core of the tool. Pick the one that matches your use case.
 
-| Preset   | Width  | FPS | Colours | Best for                     |
-|----------|--------|-----|---------|------------------------------|
-| `tiny`   | 180px  | 6   | 64      | Ultra-small reaction GIFs    |
-| `small`  | 240px  | 8   | 128     | Lightweight web embeds       |
-| `medium` | 360px  | 10  | 256     | UI demos and changelogs      |
-| `large`  | 640px  | 15  | 256     | Showcase-quality GIFs        |
-| `social` | 480px  | 12  | 256     | Optimised for social sharing |
-| `slack`  | 240px  | 8   | 128     | Optimised for Slack/Discord  |
+| Preset   | Width | FPS | Colours | Best for                     |
+| -------- | ----- | --- | ------- | ---------------------------- |
+| `tiny`   | 180px | 6   | 64      | Ultra-small reaction GIFs    |
+| `small`  | 240px | 8   | 128     | Lightweight web embeds       |
+| `medium` | 360px | 10  | 256     | UI demos and changelogs      |
+| `large`  | 640px | 15  | 256     | Showcase-quality GIFs        |
+| `social` | 480px | 12  | 256     | Optimised for social sharing |
+| `slack`  | 240px | 8   | 128     | Optimised for Slack/Discord  |
 
 List all presets in the terminal:
 
@@ -216,6 +220,7 @@ The file is saved in the same directory as the input. Use `-o` to specify a cust
 ## All Options
 
 **Single file:**
+
 ```
 gc <input> <preset> [options]
 
@@ -227,6 +232,7 @@ gc <input> <preset> [options]
 ```
 
 **Batch:**
+
 ```
 gc batch <preset> [options]
 
@@ -237,6 +243,7 @@ gc batch <preset> [options]
 ```
 
 **Utility:**
+
 ```
 gc preset list           List all presets with settings
 gc --presets             Same, shorthand
