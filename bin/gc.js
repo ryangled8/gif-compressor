@@ -5,11 +5,13 @@ import fs from "fs";
 import { Command } from "commander";
 import gifPresets from "../presets/gifPresets.js";
 import videoPresets from "../presets/videoPresets.js";
+import imgPresets from "../presets/imgPresets.js";
 import { resolveWidth } from "../lib/resolveWidth.js";
 import { buildFilters } from "../lib/buildFilters.js";
 import { buildVideoArgs } from "../lib/buildVideoCommand.js";
+import { compressImage } from "../lib/runSharp.js";
 import { runFFmpegAsync, runFFmpegRawAsync, checkFFmpeg, checkCodec, printFFmpegInstallHelp } from "../lib/runFFmpeg.js";
-import { findVideoFiles } from "../lib/selectFiles.js";
+import { findVideoFiles, findImageFiles } from "../lib/selectFiles.js";
 
 // ─── Colour helpers ───────────────────────────────────────────────────────────
 
@@ -32,6 +34,7 @@ const cyan    = (s) => `${c.cyan}${s}${c.reset}`;
 const green   = (s) => `${c.green}${s}${c.reset}`;
 const yellow  = (s) => `${c.yellow}${s}${c.reset}`;
 const magenta = (s) => `${c.magenta}${s}${c.reset}`;
+const blue    = (s) => `${c.blue}${s}${c.reset}`;
 const red     = (s) => `${c.red}${s}${c.reset}`;
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
@@ -118,6 +121,14 @@ function validateVideoPreset(name) {
   process.exit(1);
 }
 
+function validateImgPreset(name) {
+  if (imgPresets[name]) return;
+  const names = Object.keys(imgPresets).join("\n  ");
+  console.error(red(`\nUnknown image preset: ${bold(name)}\n`));
+  console.error(`Available image presets:\n\n  ${names}\n`);
+  process.exit(1);
+}
+
 // ─── Help screen ──────────────────────────────────────────────────────────────
 
 function showHelp() {
@@ -176,6 +187,23 @@ function showHelp() {
   console.log(`  ${line}`);
   console.log();
 
+  // Image commands
+  console.log(`  ${head("Image")}  ${dim("Compress or convert an image")}`);
+  console.log();
+  console.log(`  ${cmd("gc img")} ${arg("<file> <preset>")}          Compress an image file`);
+  console.log(`  ${cmd("gc img batch")} ${arg("<preset>")}           Compress all images in current directory`);
+  console.log();
+
+  console.log(`  ${dim("Override flags")}`);
+  console.log();
+  console.log(`  ${label(flag("-w, --width") + " " + arg("<value>"))} Override width (same formats as GIF)`);
+  console.log(`  ${label(flag("-q, --quality") + " " + arg("<number>"))} Override quality (1–100)`);
+  console.log(`  ${label(flag("--format") + " " + arg("<name>"))} Override output format: jpg, png, webp, avif`);
+  console.log(`  ${label(flag("-o, --output") + " " + arg("<file>"))} Custom output filename ${dim("(single only)")}`);
+  console.log();
+  console.log(`  ${line}`);
+  console.log();
+
   // GIF presets
   console.log(`  ${head("GIF Presets")}`);
   console.log();
@@ -206,6 +234,22 @@ function showHelp() {
   console.log(`  ${line}`);
   console.log();
 
+  // Image presets
+  console.log(`  ${head("Image Presets")}`);
+  console.log();
+  const imgNameWidth = Math.max(...Object.keys(imgPresets).map((k) => k.length));
+  for (const [name, preset] of Object.entries(imgPresets)) {
+    const padded = name.padEnd(imgNameWidth);
+    const imgDims = preset.keepOriginalDimensions ? "original dimensions" : `${preset.width}px`;
+    const fmt = preset.format ?? "inherit";
+    console.log(`  ${green(bold(padded))}  ${dim("→")}  ${preset.label}`);
+    console.log(dim(`  ${"".padEnd(imgNameWidth)}     ${imgDims} · ${fmt} · quality ${preset.quality}`));
+    console.log();
+  }
+
+  console.log(`  ${line}`);
+  console.log();
+
   // Examples
   console.log(`  ${head("Examples")}`);
   console.log();
@@ -217,6 +261,12 @@ function showHelp() {
   console.log(`  ${dim("$")} ${cmd("gc vid")} ${arg("demo.mov social")}`);
   console.log(`  ${dim("$")} ${cmd("gc vid")} ${arg("demo.mov social")} ${flag("--crf 24")}`);
   console.log(`  ${dim("$")} ${cmd("gc vid batch")} ${arg("social")}`);
+  console.log();
+  console.log(`  ${dim("$")} ${cmd("gc img")} ${arg("photo.jpg compress")}`);
+  console.log(`  ${dim("$")} ${cmd("gc img")} ${arg("photo.jpg webp")}`);
+  console.log(`  ${dim("$")} ${cmd("gc img")} ${arg("photo.jpg social")} ${flag("-w 720")}`);
+  console.log(`  ${dim("$")} ${cmd("gc img")} ${arg("photo.png compress")} ${flag("--format webp")}`);
+  console.log(`  ${dim("$")} ${cmd("gc img batch")} ${arg("webp")}`);
   console.log();
 }
 
@@ -243,6 +293,18 @@ function listPresets() {
     const dims = preset.keepOriginalDimensions ? "original dimensions" : `${preset.width}px wide`;
     console.log(`  ${magenta(bold(padded))}  ${dim("→")}  ${preset.label}`);
     console.log(dim(`  ${"".padEnd(vidNameWidth)}     ${dims} · CRF ${preset.crf} · ${preset.preset} · ${preset.audioBitrate} audio`));
+    console.log();
+  }
+
+  console.log(`  ${bold("Image Presets")}\n`);
+
+  const imgNameWidth = Math.max(...Object.keys(imgPresets).map((k) => k.length));
+  for (const [name, preset] of Object.entries(imgPresets)) {
+    const padded = name.padEnd(imgNameWidth);
+    const dims = preset.keepOriginalDimensions ? "original dimensions" : `${preset.width}px wide`;
+    const fmt = preset.format ?? "inherit input format";
+    console.log(`  ${green(bold(padded))}  ${dim("→")}  ${preset.label}`);
+    console.log(dim(`  ${"".padEnd(imgNameWidth)}     ${dims} · ${fmt} · quality ${preset.quality}`));
     console.log();
   }
 }
@@ -539,6 +601,141 @@ async function batchVideo(presetName, options) {
   }
 }
 
+// ─── Image: resolve settings ──────────────────────────────────────────────────
+
+function resolveImgSettings(presetName, options) {
+  const preset = { ...imgPresets[presetName] };
+  const hasWidthOverride = Boolean(options.width);
+  const keepOriginalDimensions = hasWidthOverride ? false : (preset.keepOriginalDimensions ?? false);
+  const width = hasWidthOverride
+    ? resolveWidth(options.width, preset.width ?? 1920)
+    : preset.width;
+
+  let format = options.format ?? preset.format;
+  if (format === "jpg") format = "jpeg";
+
+  return {
+    keepOriginalDimensions,
+    widthOverride: hasWidthOverride,
+    width,
+    format,
+    quality: options.quality ? parseInt(options.quality, 10) : preset.quality,
+  };
+}
+
+// ─── Image: compress single file ─────────────────────────────────────────────
+
+async function compressImg(input, presetName, options) {
+  validateImgPreset(presetName);
+
+  if (!fs.existsSync(input)) {
+    console.error(red(`\nFile not found: ${bold(input)}\n`));
+    process.exit(1);
+  }
+
+  const settings = resolveImgSettings(presetName, options);
+  const { keepOriginalDimensions, width, format, quality } = settings;
+
+  const inputExt  = path.extname(input).slice(1).toLowerCase();
+  const outputExt = format === "jpeg" ? "jpg" : (format ?? inputExt);
+  const ext       = path.extname(input);
+  const basename  = path.basename(input, ext);
+  const outDir    = path.dirname(input);
+  const widthSuffix = (options.width && width !== -1) ? `-${width}px` : "";
+  const output    = options.output
+    ? options.output
+    : path.join(outDir, `${basename}-${presetName}${widthSuffix}.${outputExt}`);
+
+  const widthLabel  = keepOriginalDimensions ? dim("original dimensions") : `${width}px`;
+  const formatLabel = format ?? dim(`inherit (${inputExt})`);
+
+  console.log();
+  console.log(`  ${dim("Compressing")} ${bold(input)}${dim("...")}`);
+  console.log();
+  console.log(`  ${dim("Mode")}      ${green("img")}`);
+  console.log(`  ${dim("Preset")}    ${green(presetName)}`);
+  console.log(`  ${dim("Width")}     ${widthLabel}`);
+  console.log(`  ${dim("Format")}    ${formatLabel}`);
+  console.log(`  ${dim("Quality")}   ${quality}`);
+  console.log();
+
+  const spinner = startSpinner(`  ${dim("Generating image...")}  `);
+
+  try {
+    await compressImage(input, settings, output);
+    spinner.clear();
+  } catch (err) {
+    spinner.clear();
+    console.error(red(`\n  Compression failed.\n`));
+    console.error(dim(err.message));
+    process.exit(1);
+  }
+
+  console.log(`  ${green("Done")} ${dim("→")} ${bold(output)}\n`);
+}
+
+// ─── Image: batch compress ────────────────────────────────────────────────────
+
+async function batchImg(presetName, options) {
+  validateImgPreset(presetName);
+
+  const cwd   = process.cwd();
+  const files = findImageFiles(cwd);
+
+  if (files.length === 0) {
+    console.log(dim("\n  No image files found in the current directory.\n"));
+    process.exit(0);
+  }
+
+  const settings = resolveImgSettings(presetName, options);
+  const { keepOriginalDimensions, width, format, quality } = settings;
+
+  const outFolder = path.join(cwd, `Outputs img-${presetName}`);
+  if (!fs.existsSync(outFolder)) fs.mkdirSync(outFolder, { recursive: true });
+
+  const total = files.length;
+  const widthSuffix = (options.width && width !== -1) ? `-${width}px` : "";
+
+  console.log();
+  console.log(`  ${bold("Batch")} ${green("img")} ${bold(`· ${total} file${total === 1 ? "" : "s"}`)} ${dim("→")} ${green(`Outputs img-${presetName}/`)}`);
+  console.log();
+  console.log(`  ${dim("Preset")}    ${green(presetName)}`);
+  console.log(`  ${dim("Width")}     ${keepOriginalDimensions ? dim("original dimensions") : `${width}px`}`);
+  console.log(`  ${dim("Format")}    ${format ?? dim("inherit")}`);
+  console.log(`  ${dim("Quality")}   ${quality}`);
+  console.log();
+
+  let passed = 0;
+  let failed = 0;
+
+  for (let i = 0; i < files.length; i++) {
+    const file      = files[i];
+    const inputExt  = path.extname(file).slice(1).toLowerCase();
+    const outputExt = format === "jpeg" ? "jpg" : (format ?? inputExt);
+    const basename  = path.basename(file, path.extname(file));
+    const output    = path.join(outFolder, `${basename}-${presetName}${widthSuffix}.${outputExt}`);
+    const label     = `  ${dim(`[${i + 1}/${total}]`)} ${file}${dim("...")}  `;
+    const spinner   = startSpinner(label);
+
+    try {
+      await compressImage(path.join(cwd, file), settings, output);
+      spinner.done(green("Done"));
+      passed++;
+    } catch {
+      spinner.done(red("Failed"));
+      failed++;
+    }
+  }
+
+  console.log();
+
+  if (failed === 0) {
+    console.log(`  ${green(bold(`${passed} image${passed === 1 ? "" : "s"} saved`))} ${dim("→")} ${bold(`Outputs img-${presetName}/`)}\n`);
+  } else {
+    console.log(`  ${green(`${passed} saved`)}  ${red(`${failed} failed`)}  ${dim("→")} ${bold(`Outputs img-${presetName}/`)}\n`);
+  }
+}
+
 // ─── CLI definition ───────────────────────────────────────────────────────────
 
 const rawArgs = process.argv.slice(2);
@@ -628,6 +825,42 @@ videoCmd
   .action(async (preset, options) => {
     try {
       await batchVideo(preset, options);
+    } catch (err) {
+      console.error(red(`\n  Error: ${err.message}\n`));
+      process.exit(1);
+    }
+  });
+
+// ── gc img <input> <preset> [options]
+//    gc img batch <preset> [options]
+const imgCmd = program
+  .command("img")
+  .description("Compress or convert an image")
+  .argument("<input>", "Source image file (e.g. photo.jpg)")
+  .argument("<preset>", "Image preset (e.g. compress, webp)")
+  .option("-w, --width <value>",    "Override width: 500 | 1/2 | 2x | 0.5x")
+  .option("-q, --quality <number>", "Override quality (1–100)")
+  .option("--format <name>",        "Override output format: jpg, png, webp, avif")
+  .option("-o, --output <file>",    "Custom output filename")
+  .action(async (input, preset, options) => {
+    try {
+      await compressImg(input, preset, options);
+    } catch (err) {
+      console.error(red(`\n  Error: ${err.message}\n`));
+      process.exit(1);
+    }
+  });
+
+imgCmd
+  .command("batch")
+  .description("Compress all images in the current directory")
+  .argument("<preset>", "Image preset (e.g. compress, webp)")
+  .option("-w, --width <value>",    "Override width: 500 | 1/2 | 2x | 0.5x")
+  .option("-q, --quality <number>", "Override quality (1–100)")
+  .option("--format <name>",        "Override output format: jpg, png, webp, avif")
+  .action(async (preset, options) => {
+    try {
+      await batchImg(preset, options);
     } catch (err) {
       console.error(red(`\n  Error: ${err.message}\n`));
       process.exit(1);

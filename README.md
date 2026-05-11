@@ -1,8 +1,8 @@
 # gc
 
-> Creator-friendly media compression CLI — built on top of FFmpeg
+> Creator-friendly media compression CLI — GIFs, videos, and images
 
-Turn any video into a compressed GIF or MP4 using simple, memorable commands. No FFmpeg knowledge required.
+Compress and convert any media using simple, memorable commands. No FFmpeg or encoder knowledge required.
 
 ---
 
@@ -10,7 +10,9 @@ Turn any video into a compressed GIF or MP4 using simple, memorable commands. No
 
 ### FFmpeg
 
-This tool requires FFmpeg to be installed on your machine. It is **not** bundled.
+Required for GIF and video modes. It is **not** bundled.
+
+> Image mode (`gc img`) uses [sharp](https://sharp.pixelplumbing.com/) which is installed automatically with `npm install` — no separate install needed.
 
 **Mac:**
 
@@ -158,11 +160,11 @@ Output:
 ```
   Compressing demo.mov...
 
-  Mode      video
+  Mode      vid
   Preset    social
-  Width     1080px
+  Width     max 1080px
   CRF       28
-  Codec     H.264
+  Codec     H.265 (HEVC)
   Audio     128k
 
   Generating MP4...
@@ -230,11 +232,87 @@ Outputs are saved to `Outputs vid-{preset}/`.
 
 ---
 
+## Image Mode
+
+Compress or convert images using [sharp](https://sharp.pixelplumbing.com/) (libvips + mozjpeg).
+
+```bash
+gc img <input> <preset>
+```
+
+Example:
+
+```bash
+gc img photo.jpg webp
+```
+
+Output:
+
+```
+  Compressing photo.jpg...
+
+  Mode      img
+  Preset    webp
+  Width     original dimensions
+  Format    webp
+  Quality   80
+
+  Generating image...
+  Done → photo-webp.webp
+```
+
+### Image Presets
+
+| Preset      | Width      | Format         | Quality | Best for                              |
+| ----------- | ---------- | -------------- | ------- | ------------------------------------- |
+| `compress`  | original   | inherit        | 80      | Compress in place, keep format        |
+| `webp`      | original   | WebP           | 80      | Web images, great compression         |
+| `avif`      | original   | AVIF           | 50      | Best compression, modern browsers     |
+| `social`    | 1080px     | JPEG           | 85      | Social media posts                    |
+| `thumbnail` | 400px      | JPEG           | 80      | Thumbnails and previews               |
+
+### Image Overrides
+
+```bash
+# Width
+gc img photo.jpg social -w 720       # absolute pixels
+gc img photo.jpg social -w 1/2       # fraction of preset width
+gc img photo.jpg social -w 2x        # multiplier
+
+# Quality
+gc img photo.jpg webp -q 60
+
+# Format — convert to a different format
+gc img photo.png compress --format webp
+gc img photo.jpg compress --format avif
+
+# Custom output filename
+gc img photo.jpg webp -o out/hero.webp
+```
+
+### Image Batch Mode
+
+Compress every image in the current directory.
+
+```bash
+gc img batch webp
+gc img batch compress --format avif
+gc img batch social -w 720
+```
+
+Outputs are saved to `Outputs img-{preset}/`.
+
+---
+
 ## Output Filenames
 
 **GIF:** `{input-name}-{preset}.gif` — e.g. `demo-medium.gif`
 
 **Video:** `{input-name}-{preset}.mp4` — e.g. `demo-social.mp4`
+
+**Image:** `{input-name}-{preset}.{ext}` — e.g. `photo-webp.webp`, `photo-compress.jpg`
+
+When `-w` is used, the resolved pixel width is appended: `photo-social-720px.jpg`
 
 Files are saved in the same directory as the input. Use `-o` to specify a custom path (single-file mode only).
 
