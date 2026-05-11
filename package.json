@@ -2,7 +2,7 @@
   "name": "gifcompress",
   "version": "1.0.0",
   "description": "Creator-friendly GIF compression CLI — built on top of FFmpeg",
-  "type": "commonjs",
+  "type": "module",
   "bin": {
     "gc": "./bin/gc.js"
   },

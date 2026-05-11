@@ -1,4 +1,22 @@
-module.exports = {
+// GIF preset schema:
+// {
+//   label: string                     — human-readable description shown in help/preset list
+//   keepOriginalDimensions?: boolean  — if true, skip resizing (preserve source dimensions)
+//   width?: number                    — output width in pixels; omit when keepOriginalDimensions is true
+//   fps: number                       — frames per second
+//   colors: number                    — palette size, max 256
+//   dither: string                    — dithering algorithm (e.g. "bayer", "floyd_steinberg")
+// }
+
+export default {
+  compress: {
+    label: "Keep original dimensions, optimise palette",
+    keepOriginalDimensions: true,
+    fps: 15,
+    colors: 256,
+    dither: "bayer"
+  },
+
   tiny: {
     label: "Ultra-small reaction GIFs",
     width: 180,
