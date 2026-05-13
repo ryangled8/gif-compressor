@@ -213,7 +213,7 @@ function showHelp() {
     const gifDims = preset.keepOriginalDimensions
       ? "original dimensions"
       : preset.widthFactor != null
-        ? `${preset.widthFactor * 100}% of source`
+        ? `${Math.round(preset.widthFactor * 100)}% of source`
         : `${preset.width}px`;
     console.log(`  ${cmd(padded)}  ${dim("→")}  ${preset.label}`);
     console.log(dim(`  ${"".padEnd(gifNameWidth)}     ${gifDims} · ${preset.fps}fps · ${preset.colors} colours`));
@@ -382,7 +382,7 @@ async function compressGif(input, presetName, options) {
   const widthLabel = keepOriginalDimensions
     ? dim("original dimensions")
     : widthFactor != null
-      ? dim(`${widthFactor * 100}% of source`)
+      ? dim(`${Math.round(widthFactor * 100)}% of source`)
       : width === -1 ? dim("auto (aspect lock)") : `${width}px`;
 
   console.log();
@@ -439,7 +439,7 @@ async function batchGif(presetName, options) {
   const widthLabel = keepOriginalDimensions
     ? dim("original dimensions")
     : widthFactor != null
-      ? dim(`${widthFactor * 100}% of source`)
+      ? dim(`${Math.round(widthFactor * 100)}% of source`)
       : width === -1 ? dim("auto (aspect lock)") : `${width}px`;
 
   console.log();
