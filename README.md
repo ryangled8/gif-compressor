@@ -136,6 +136,13 @@ gc gif batch medium -w 1/2
 gc gif batch medium -w 2x --fps 12
 ```
 
+Add `--all` to also recurse into subdirectories. Outputs mirror the source directory structure:
+
+```bash
+gc gif batch medium --all
+gc gif batch medium --all -w 1/2
+```
+
 ---
 
 ## Video Mode
@@ -233,6 +240,13 @@ gc vid batch social --crf 24
 
 Outputs are saved to `Outputs vid-{preset}/`.
 
+Add `--all` to also recurse into subdirectories:
+
+```bash
+gc vid batch social --all
+gc vid batch compress --all
+```
+
 ---
 
 ## Image Mode
@@ -304,6 +318,13 @@ gc img batch social -w 720
 ```
 
 Outputs are saved to `Outputs img-{preset}/`.
+
+Add `--all` to also recurse into subdirectories:
+
+```bash
+gc img batch webp --all
+gc img batch compress --all --format avif
+```
 
 ---
 

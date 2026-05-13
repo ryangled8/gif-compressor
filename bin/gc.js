@@ -422,10 +422,10 @@ async function batchGif(presetName, options) {
   }
 
   const cwd   = process.cwd();
-  const files = findVideoFiles(cwd);
+  const files = findVideoFiles(cwd, options.all);
 
   if (files.length === 0) {
-    console.log(dim("\n  No video files found in the current directory.\n"));
+    console.log(dim(`\n  No video files found${options.all ? " (including subdirectories)" : " in the current directory"}.\n`));
     process.exit(0);
   }
 
@@ -446,6 +446,7 @@ async function batchGif(presetName, options) {
   console.log(`  ${bold(`Batch`)} ${cyan("gif")} ${bold(`· ${total} file${total === 1 ? "" : "s"}`)} ${dim("→")} ${cyan(`Outputs gif-${presetName}/`)}`);
   console.log();
   console.log(`  ${dim("Preset")}    ${cyan(presetName)}`);
+  if (options.all) console.log(`  ${dim("Scope")}     subdirectories included`);
   console.log(`  ${dim("Width")}     ${widthLabel}`);
   console.log(`  ${dim("FPS")}       ${fps}`);
   console.log(`  ${dim("Colours")}   ${colors}`);
@@ -457,12 +458,15 @@ async function batchGif(presetName, options) {
   const widthSuffix = (options.width && width !== -1) ? `-${width}px` : "";
 
   for (let i = 0; i < files.length; i++) {
-    const file     = files[i];
-    const ext      = path.extname(file);
-    const basename = path.basename(file, ext);
-    const output   = path.join(outFolder, `${basename}-${presetName}${widthSuffix}.gif`);
-    const label    = `  ${dim(`[${i + 1}/${total}]`)} ${file}${dim("...")}  `;
-    const spinner  = startSpinner(label);
+    const file      = files[i];
+    const ext       = path.extname(file);
+    const basename  = path.basename(file, ext);
+    const relDir    = path.dirname(file);
+    const outputDir = relDir === "." ? outFolder : path.join(outFolder, relDir);
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+    const output    = path.join(outputDir, `${basename}-${presetName}${widthSuffix}.gif`);
+    const label     = `  ${dim(`[${i + 1}/${total}]`)} ${file}${dim("...")}  `;
+    const spinner   = startSpinner(label);
 
     try {
       await runFFmpegAsync(path.join(cwd, file), filters, output);
@@ -553,10 +557,10 @@ async function batchVideo(presetName, options) {
   }
 
   const cwd   = process.cwd();
-  const files = findVideoFiles(cwd);
+  const files = findVideoFiles(cwd, options.all);
 
   if (files.length === 0) {
-    console.log(dim("\n  No video files found in the current directory.\n"));
+    console.log(dim(`\n  No video files found${options.all ? " (including subdirectories)" : " in the current directory"}.\n`));
     process.exit(0);
   }
 
@@ -574,6 +578,7 @@ async function batchVideo(presetName, options) {
   console.log(`  ${bold(`Batch`)} ${magenta("vid")} ${bold(`· ${total} file${total === 1 ? "" : "s"}`)} ${dim("→")} ${magenta(`Outputs vid-${presetName}/`)}`);
   console.log();
   console.log(`  ${dim("Preset")}    ${magenta(presetName)}`);
+  if (options.all) console.log(`  ${dim("Scope")}     subdirectories included`);
   console.log(`  ${dim("Width")}     ${keepOriginalDimensions ? dim("original dimensions") : `max ${width}px`}`);
   console.log(`  ${dim("CRF")}       ${settings.crf}`);
   console.log();
@@ -586,12 +591,15 @@ async function batchVideo(presetName, options) {
   const widthSuffix = (options.width && width !== -1) ? `-${width}px` : "";
 
   for (let i = 0; i < files.length; i++) {
-    const file     = files[i];
-    const ext      = path.extname(file);
-    const basename = path.basename(file, ext);
-    const output   = path.join(outFolder, `${basename}-${presetName}${widthSuffix}.mp4`);
-    const label    = `  ${dim(`[${i + 1}/${total}]`)} ${file}${dim("...")}  `;
-    const spinner  = startSpinner(label);
+    const file      = files[i];
+    const ext       = path.extname(file);
+    const basename  = path.basename(file, ext);
+    const relDir    = path.dirname(file);
+    const outputDir = relDir === "." ? outFolder : path.join(outFolder, relDir);
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+    const output    = path.join(outputDir, `${basename}-${presetName}${widthSuffix}.mp4`);
+    const label     = `  ${dim(`[${i + 1}/${total}]`)} ${file}${dim("...")}  `;
+    const spinner   = startSpinner(label);
 
     const args = buildVideoArgs(path.join(cwd, file), settings, output);
 
@@ -693,10 +701,10 @@ async function batchImg(presetName, options) {
   validateImgPreset(presetName);
 
   const cwd   = process.cwd();
-  const files = findImageFiles(cwd);
+  const files = findImageFiles(cwd, options.all);
 
   if (files.length === 0) {
-    console.log(dim("\n  No image files found in the current directory.\n"));
+    console.log(dim(`\n  No image files found${options.all ? " (including subdirectories)" : " in the current directory"}.\n`));
     process.exit(0);
   }
 
@@ -713,6 +721,7 @@ async function batchImg(presetName, options) {
   console.log(`  ${bold("Batch")} ${green("img")} ${bold(`· ${total} file${total === 1 ? "" : "s"}`)} ${dim("→")} ${green(`Outputs img-${presetName}/`)}`);
   console.log();
   console.log(`  ${dim("Preset")}    ${green(presetName)}`);
+  if (options.all) console.log(`  ${dim("Scope")}     subdirectories included`);
   console.log(`  ${dim("Width")}     ${keepOriginalDimensions ? dim("original dimensions") : `${width}px`}`);
   console.log(`  ${dim("Format")}    ${format ?? dim("inherit")}`);
   console.log(`  ${dim("Quality")}   ${quality}`);
@@ -726,7 +735,10 @@ async function batchImg(presetName, options) {
     const inputExt  = path.extname(file).slice(1).toLowerCase();
     const outputExt = format === "jpeg" ? "jpg" : (format ?? inputExt);
     const basename  = path.basename(file, path.extname(file));
-    const output    = path.join(outFolder, `${basename}-${presetName}${widthSuffix}.${outputExt}`);
+    const relDir    = path.dirname(file);
+    const outputDir = relDir === "." ? outFolder : path.join(outFolder, relDir);
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+    const output    = path.join(outputDir, `${basename}-${presetName}${widthSuffix}.${outputExt}`);
     const label     = `  ${dim(`[${i + 1}/${total}]`)} ${file}${dim("...")}  `;
     const spinner   = startSpinner(label);
 
@@ -793,6 +805,7 @@ gifCmd
   .option("-f, --fps <number>",    "Override frames per second")
   .option("-c, --colors <number>", "Override palette colours (max 256)")
   .option("-d, --dither <name>",   "Override dither algorithm")
+  .option("-a, --all",             "Recurse into subdirectories")
   .action(async (preset, options) => {
     try {
       await batchGif(preset, options);
@@ -835,6 +848,7 @@ videoCmd
   .option("--codec <name>",        "Override video codec")
   .option("--preset <name>",       "Override FFmpeg encoder preset")
   .option("--audio <bitrate>",     "Override audio bitrate")
+  .option("-a, --all",             "Recurse into subdirectories")
   .action(async (preset, options) => {
     try {
       await batchVideo(preset, options);
@@ -871,6 +885,7 @@ imgCmd
   .option("-w, --width <value>",    "Override width: 500 | 1/2 | 2x | 0.5x")
   .option("-q, --quality <number>", "Override quality (1–100)")
   .option("--format <name>",        "Override output format: jpg, png, webp, avif")
+  .option("-a, --all",              "Recurse into subdirectories")
   .action(async (preset, options) => {
     try {
       await batchImg(preset, options);
