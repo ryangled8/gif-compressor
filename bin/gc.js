@@ -210,7 +210,11 @@ function showHelp() {
   const gifNameWidth = Math.max(...Object.keys(gifPresets).map((k) => k.length));
   for (const [name, preset] of Object.entries(gifPresets)) {
     const padded = name.padEnd(gifNameWidth);
-    const gifDims = preset.keepOriginalDimensions ? "original dimensions" : `${preset.width}px`;
+    const gifDims = preset.keepOriginalDimensions
+      ? "original dimensions"
+      : preset.widthFactor != null
+        ? `${preset.widthFactor * 100}% of source`
+        : `${preset.width}px`;
     console.log(`  ${cmd(padded)}  ${dim("→")}  ${preset.label}`);
     console.log(dim(`  ${"".padEnd(gifNameWidth)}     ${gifDims} · ${preset.fps}fps · ${preset.colors} colours`));
     console.log();
@@ -320,6 +324,7 @@ function resolveGifSettings(presetName, options) {
     colors: options.colors ? parseInt(options.colors, 10) : preset.colors,
     dither: options.dither ?? preset.dither,
     width:  hasWidthOverride ? resolveWidth(options.width, preset.width ?? 1920) : preset.width,
+    widthFactor: hasWidthOverride ? null : (preset.widthFactor ?? null),
     keepOriginalDimensions,
     widthOverride: hasWidthOverride,
   };
@@ -364,7 +369,7 @@ async function compressGif(input, presetName, options) {
     process.exit(1);
   }
 
-  const { fps, colors, dither, width, keepOriginalDimensions } = resolveGifSettings(presetName, options);
+  const { fps, colors, dither, width, widthFactor, keepOriginalDimensions } = resolveGifSettings(presetName, options);
 
   const ext         = path.extname(input);
   const basename    = path.basename(input, ext);
@@ -374,7 +379,11 @@ async function compressGif(input, presetName, options) {
     ? options.output
     : path.join(outDir, `${basename}-${presetName}${widthSuffix}.gif`);
 
-  const widthLabel = keepOriginalDimensions ? dim("original dimensions") : width === -1 ? dim("auto (aspect lock)") : `${width}px`;
+  const widthLabel = keepOriginalDimensions
+    ? dim("original dimensions")
+    : widthFactor != null
+      ? dim(`${widthFactor * 100}% of source`)
+      : width === -1 ? dim("auto (aspect lock)") : `${width}px`;
 
   console.log();
   console.log(`  ${dim("Compressing")} ${bold(input)}${dim("...")}`);
@@ -386,7 +395,7 @@ async function compressGif(input, presetName, options) {
   console.log(`  ${dim("Colours")}   ${colors}`);
   console.log(`  ${dim("Dither")}    ${dither}`);
   console.log();
-  const filters = buildFilters({ fps, width, colors, dither, keepOriginalDimensions });
+  const filters = buildFilters({ fps, width, widthFactor, colors, dither, keepOriginalDimensions });
   const spinner = startSpinner(`  ${dim("Generating GIF...")}  `);
 
   try {
@@ -423,11 +432,15 @@ async function batchGif(presetName, options) {
   const outFolder = path.join(cwd, `Outputs gif-${presetName}`);
   if (!fs.existsSync(outFolder)) fs.mkdirSync(outFolder, { recursive: true });
 
-  const { fps, colors, dither, width, keepOriginalDimensions } = resolveGifSettings(presetName, options);
-  const filters = buildFilters({ fps, width, colors, dither, keepOriginalDimensions });
+  const { fps, colors, dither, width, widthFactor, keepOriginalDimensions } = resolveGifSettings(presetName, options);
+  const filters = buildFilters({ fps, width, widthFactor, colors, dither, keepOriginalDimensions });
   const total   = files.length;
 
-  const widthLabel = keepOriginalDimensions ? dim("original dimensions") : width === -1 ? dim("auto (aspect lock)") : `${width}px`;
+  const widthLabel = keepOriginalDimensions
+    ? dim("original dimensions")
+    : widthFactor != null
+      ? dim(`${widthFactor * 100}% of source`)
+      : width === -1 ? dim("auto (aspect lock)") : `${width}px`;
 
   console.log();
   console.log(`  ${bold(`Batch`)} ${cyan("gif")} ${bold(`· ${total} file${total === 1 ? "" : "s"}`)} ${dim("→")} ${cyan(`Outputs gif-${presetName}/`)}`);

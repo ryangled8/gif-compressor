@@ -99,6 +99,9 @@ Output:
 | `large`     | 640px              | 15  | 256     | Showcase-quality GIFs             |
 | `social`    | 480px              | 12  | 256     | Optimised for social sharing      |
 | `slack`     | 240px              | 8   | 128     | Optimised for Slack and Discord   |
+| `half`      | 50% of source      | 25  | 256     | Half source width, full quality   |
+| `third`     | 33% of source      | 25  | 256     | One third source width            |
+| `quart`     | 25% of source      | 25  | 256     | Quarter source width              |
 
 ### GIF Overrides
 

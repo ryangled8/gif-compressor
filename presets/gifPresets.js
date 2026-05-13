@@ -2,7 +2,8 @@
 // {
 //   label: string                     — human-readable description shown in help/preset list
 //   keepOriginalDimensions?: boolean  — if true, skip resizing (preserve source dimensions)
-//   width?: number                    — output width in pixels; omit when keepOriginalDimensions is true
+//   width?: number                    — output width in pixels; omit when keepOriginalDimensions or widthFactor is set
+//   widthFactor?: number              — scale to a fraction of source width (e.g. 0.5 = half); ffmpeg resolves iw at runtime
 //   fps: number                       — frames per second
 //   colors: number                    — palette size, max 256
 //   dither: string                    — dithering algorithm (e.g. "bayer", "floyd_steinberg")
@@ -63,5 +64,29 @@ export default {
     fps: 8,
     colors: 128,
     dither: "bayer"
-  }
+  },
+  // Ratio-based presets (scale to a fraction of source width, e.g. 0.5 = half)
+  half: {
+    label: "Half source width, full quality",
+    widthFactor: 0.5,
+    fps: 25,
+    colors: 256,
+    dither: "bayer"
+  },
+
+  third: {
+    label: "One third source width, full quality",
+    widthFactor: 1/3,
+    fps: 25,
+    colors: 256,
+    dither: "bayer"
+  },
+
+  quart: {
+    label: "Quarter source width, full quality",
+    widthFactor: 0.25,
+    fps: 25,
+    colors: 256,
+    dither: "bayer"
+  },
 };
