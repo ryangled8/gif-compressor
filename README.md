@@ -183,14 +183,17 @@ Output:
 
 ### Video Presets
 
-| Preset           | Max Width    | CRF | Codec | Best for                              |
-| ---------------- | ------------ | --- | ----- | ------------------------------------- |
-| `compress`       | original     | 28  | H.265 | Reduce filesize, keep dimensions      |
-| `compress-best`  | original     | 28  | H.265 | Maximum compression, keep dimensions  |
-| `web`            | original     | 26  | H.265 | Web embedding, keep dimensions        |
-| `social`         | 1080px       | 28  | H.265 | Social media posts                    |
-| `showcase`       | 1920px       | 22  | H.265 | High-quality portfolio and demos      |
-| `lightweight`    | 1280px       | 32  | H.265 | Email and document attachments        |
+| Preset           | Max Width       | CRF | Codec | Best for                              |
+| ---------------- | --------------- | --- | ----- | ------------------------------------- |
+| `compress`       | original        | 28  | H.265 | Reduce filesize, keep dimensions      |
+| `compress-best`  | original        | 28  | H.265 | Maximum compression, keep dimensions  |
+| `web`            | original        | 26  | H.265 | Web embedding, keep dimensions        |
+| `social`         | 1080px          | 28  | H.265 | Social media posts                    |
+| `showcase`       | 1920px          | 22  | H.265 | High-quality portfolio and demos      |
+| `lightweight`    | 1280px          | 32  | H.265 | Email and document attachments        |
+| `half`           | 50% of source   | 28  | H.265 | Half source width                     |
+| `third`          | 33% of source   | 28  | H.265 | One third source width                |
+| `quart`          | 25% of source   | 28  | H.265 | Quarter source width                  |
 
 All video presets automatically apply:
 - H.265 (HEVC) encoding — roughly 50% smaller files than H.264 at the same visual quality
@@ -280,13 +283,16 @@ Output:
 
 ### Image Presets
 
-| Preset      | Width      | Format         | Quality | Best for                              |
-| ----------- | ---------- | -------------- | ------- | ------------------------------------- |
-| `compress`  | original   | inherit        | 80      | Compress in place, keep format        |
-| `webp`      | original   | WebP           | 80      | Web images, great compression         |
-| `avif`      | original   | AVIF           | 50      | Best compression, modern browsers     |
-| `social`    | 1080px     | JPEG           | 85      | Social media posts                    |
-| `thumbnail` | 400px      | JPEG           | 80      | Thumbnails and previews               |
+| Preset      | Width           | Format  | Quality | Best for                              |
+| ----------- | --------------- | ------- | ------- | ------------------------------------- |
+| `compress`  | original        | inherit | 80      | Compress in place, keep format        |
+| `webp`      | original        | WebP    | 80      | Web images, great compression         |
+| `avif`      | original        | AVIF    | 50      | Best compression, modern browsers     |
+| `social`    | 1080px          | JPEG    | 85      | Social media posts                    |
+| `thumbnail` | 400px           | JPEG    | 80      | Thumbnails and previews               |
+| `half`      | 50% of source   | inherit | 80      | Half source width                     |
+| `third`     | 33% of source   | inherit | 80      | One third source width                |
+| `quart`     | 25% of source   | inherit | 80      | Quarter source width                  |
 
 ### Image Overrides
 

@@ -229,7 +229,11 @@ function showHelp() {
   const vidNameWidth = Math.max(...Object.keys(videoPresets).map((k) => k.length));
   for (const [name, preset] of Object.entries(videoPresets)) {
     const padded = name.padEnd(vidNameWidth);
-    const dims = preset.keepOriginalDimensions ? "original dimensions" : `${preset.width}px wide`;
+    const dims = preset.keepOriginalDimensions
+      ? "original dimensions"
+      : preset.widthFactor != null
+        ? `${Math.round(preset.widthFactor * 100)}% of source`
+        : `${preset.width}px wide`;
     console.log(`  ${magenta(bold(padded))}  ${dim("→")}  ${preset.label}`);
     console.log(dim(`  ${"".padEnd(vidNameWidth)}     ${dims} · CRF ${preset.crf} · ${preset.audioBitrate} audio`));
     console.log();
@@ -244,7 +248,11 @@ function showHelp() {
   const imgNameWidth = Math.max(...Object.keys(imgPresets).map((k) => k.length));
   for (const [name, preset] of Object.entries(imgPresets)) {
     const padded = name.padEnd(imgNameWidth);
-    const imgDims = preset.keepOriginalDimensions ? "original dimensions" : `${preset.width}px`;
+    const imgDims = preset.keepOriginalDimensions
+      ? "original dimensions"
+      : preset.widthFactor != null
+        ? `${Math.round(preset.widthFactor * 100)}% of source`
+        : `${preset.width}px`;
     const fmt = preset.format ?? "inherit";
     console.log(`  ${green(bold(padded))}  ${dim("→")}  ${preset.label}`);
     console.log(dim(`  ${"".padEnd(imgNameWidth)}     ${imgDims} · ${fmt} · quality ${preset.quality}`));
@@ -294,7 +302,11 @@ function listPresets() {
   const vidNameWidth = Math.max(...Object.keys(videoPresets).map((k) => k.length));
   for (const [name, preset] of Object.entries(videoPresets)) {
     const padded = name.padEnd(vidNameWidth);
-    const dims = preset.keepOriginalDimensions ? "original dimensions" : `${preset.width}px wide`;
+    const dims = preset.keepOriginalDimensions
+      ? "original dimensions"
+      : preset.widthFactor != null
+        ? `${Math.round(preset.widthFactor * 100)}% of source`
+        : `${preset.width}px wide`;
     console.log(`  ${magenta(bold(padded))}  ${dim("→")}  ${preset.label}`);
     console.log(dim(`  ${"".padEnd(vidNameWidth)}     ${dims} · CRF ${preset.crf} · ${preset.preset} · ${preset.audioBitrate} audio`));
     console.log();
@@ -305,7 +317,11 @@ function listPresets() {
   const imgNameWidth = Math.max(...Object.keys(imgPresets).map((k) => k.length));
   for (const [name, preset] of Object.entries(imgPresets)) {
     const padded = name.padEnd(imgNameWidth);
-    const dims = preset.keepOriginalDimensions ? "original dimensions" : `${preset.width}px wide`;
+    const dims = preset.keepOriginalDimensions
+      ? "original dimensions"
+      : preset.widthFactor != null
+        ? `${Math.round(preset.widthFactor * 100)}% of source`
+        : `${preset.width}px wide`;
     const fmt = preset.format ?? "inherit input format";
     console.log(`  ${green(bold(padded))}  ${dim("→")}  ${preset.label}`);
     console.log(dim(`  ${"".padEnd(imgNameWidth)}     ${dims} · ${fmt} · quality ${preset.quality}`));
@@ -346,6 +362,7 @@ function resolveVideoSettings(presetName, options) {
     keepOriginalDimensions,
     widthOverride: hasWidthOverride,
     width,
+    widthFactor: hasWidthOverride ? null : (preset.widthFactor ?? null),
     codec:         options.codec  ?? preset.codec,
     crf:           options.crf    ? parseInt(options.crf, 10) : preset.crf,
     preset:        options.preset ?? preset.preset,
@@ -503,7 +520,7 @@ async function compressVideo(input, presetName, options) {
   }
 
   const settings = resolveVideoSettings(presetName, options);
-  const { keepOriginalDimensions, width, codec, crf, preset, fps, audioBitrate } = settings;
+  const { keepOriginalDimensions, width, widthFactor, codec, crf, preset, fps, audioBitrate } = settings;
 
   assertCodecAvailable(codec);
 
@@ -520,9 +537,15 @@ async function compressVideo(input, presetName, options) {
   console.log();
   console.log(`  ${dim("Compressing")} ${bold(input)}${dim("...")}`);
   console.log();
+  const vidWidthLabel = keepOriginalDimensions
+    ? dim("original dimensions")
+    : widthFactor != null
+      ? dim(`${Math.round(widthFactor * 100)}% of source`)
+      : `max ${width}px`;
+
   console.log(`  ${dim("Mode")}      ${magenta("vid")}`);
   console.log(`  ${dim("Preset")}    ${magenta(presetName)}`);
-  console.log(`  ${dim("Width")}     ${keepOriginalDimensions ? dim("original dimensions") : `max ${width}px`}`);
+  console.log(`  ${dim("Width")}     ${vidWidthLabel}`);
   if (fps) console.log(`  ${dim("FPS")}       ${fps}`);
   console.log(`  ${dim("CRF")}       ${crf}`);
   console.log(`  ${dim("Codec")}     ${codecLabel}`);
@@ -568,18 +591,24 @@ async function batchVideo(presetName, options) {
   if (!fs.existsSync(outFolder)) fs.mkdirSync(outFolder, { recursive: true });
 
   const settings = resolveVideoSettings(presetName, options);
-  const { keepOriginalDimensions, width } = settings;
+  const { keepOriginalDimensions, width, widthFactor } = settings;
 
   assertCodecAvailable(settings.codec);
 
   const total = files.length;
+
+  const batchVidWidthLabel = keepOriginalDimensions
+    ? dim("original dimensions")
+    : widthFactor != null
+      ? dim(`${Math.round(widthFactor * 100)}% of source`)
+      : `max ${width}px`;
 
   console.log();
   console.log(`  ${bold(`Batch`)} ${magenta("vid")} ${bold(`· ${total} file${total === 1 ? "" : "s"}`)} ${dim("→")} ${magenta(`Outputs vid-${presetName}/`)}`);
   console.log();
   console.log(`  ${dim("Preset")}    ${magenta(presetName)}`);
   if (options.all) console.log(`  ${dim("Scope")}     subdirectories included`);
-  console.log(`  ${dim("Width")}     ${keepOriginalDimensions ? dim("original dimensions") : `max ${width}px`}`);
+  console.log(`  ${dim("Width")}     ${batchVidWidthLabel}`);
   console.log(`  ${dim("CRF")}       ${settings.crf}`);
   console.log();
   warnIfSlow(videoPresets[presetName]);
@@ -639,6 +668,7 @@ function resolveImgSettings(presetName, options) {
     keepOriginalDimensions,
     widthOverride: hasWidthOverride,
     width,
+    widthFactor: hasWidthOverride ? null : (preset.widthFactor ?? null),
     format,
     quality: options.quality ? parseInt(options.quality, 10) : preset.quality,
   };
@@ -655,7 +685,7 @@ async function compressImg(input, presetName, options) {
   }
 
   const settings = resolveImgSettings(presetName, options);
-  const { keepOriginalDimensions, width, format, quality } = settings;
+  const { keepOriginalDimensions, width, widthFactor, format, quality } = settings;
 
   const inputExt  = path.extname(input).slice(1).toLowerCase();
   const outputExt = format === "jpeg" ? "jpg" : (format ?? inputExt);
@@ -667,7 +697,11 @@ async function compressImg(input, presetName, options) {
     ? options.output
     : path.join(outDir, `${basename}-${presetName}${widthSuffix}.${outputExt}`);
 
-  const widthLabel  = keepOriginalDimensions ? dim("original dimensions") : `${width}px`;
+  const widthLabel = keepOriginalDimensions
+    ? dim("original dimensions")
+    : widthFactor != null
+      ? dim(`${Math.round(widthFactor * 100)}% of source`)
+      : `${width}px`;
   const formatLabel = format ?? dim(`inherit (${inputExt})`);
 
   console.log();
@@ -709,7 +743,7 @@ async function batchImg(presetName, options) {
   }
 
   const settings = resolveImgSettings(presetName, options);
-  const { keepOriginalDimensions, width, format, quality } = settings;
+  const { keepOriginalDimensions, width, widthFactor, format, quality } = settings;
 
   const outFolder = path.join(cwd, `Outputs img-${presetName}`);
   if (!fs.existsSync(outFolder)) fs.mkdirSync(outFolder, { recursive: true });
@@ -717,12 +751,18 @@ async function batchImg(presetName, options) {
   const total = files.length;
   const widthSuffix = (options.width && width !== -1) ? `-${width}px` : "";
 
+  const batchImgWidthLabel = keepOriginalDimensions
+    ? dim("original dimensions")
+    : widthFactor != null
+      ? dim(`${Math.round(widthFactor * 100)}% of source`)
+      : `${width}px`;
+
   console.log();
   console.log(`  ${bold("Batch")} ${green("img")} ${bold(`· ${total} file${total === 1 ? "" : "s"}`)} ${dim("→")} ${green(`Outputs img-${presetName}/`)}`);
   console.log();
   console.log(`  ${dim("Preset")}    ${green(presetName)}`);
   if (options.all) console.log(`  ${dim("Scope")}     subdirectories included`);
-  console.log(`  ${dim("Width")}     ${keepOriginalDimensions ? dim("original dimensions") : `${width}px`}`);
+  console.log(`  ${dim("Width")}     ${batchImgWidthLabel}`);
   console.log(`  ${dim("Format")}    ${format ?? dim("inherit")}`);
   console.log(`  ${dim("Quality")}   ${quality}`);
   console.log();
