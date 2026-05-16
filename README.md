@@ -293,6 +293,7 @@ Output:
 | `half`      | 50% of source   | inherit | 80      | Half source width                     |
 | `third`     | 33% of source   | inherit | 80      | One third source width                |
 | `quart`     | 25% of source   | inherit | 80      | Quarter source width                  |
+| `bg-remove` | original        | PNG     | —       | Remove background, transparent PNG    |
 
 ### Image Overrides
 
@@ -332,6 +333,25 @@ gc img batch webp --all
 gc img batch compress --all --format avif
 ```
 
+### Background Removal
+
+Remove the image background using a local AI model. Output is always a transparent PNG.
+
+> No API key needed — runs entirely on your machine using [ONNX](https://onnxruntime.ai/) models (~45MB download on first use, then cached).
+
+```bash
+gc img photo.jpg bg-remove
+gc img photo.jpg bg-remove -w 1080
+```
+
+Batch:
+
+```bash
+gc img batch bg-remove
+gc img batch bg-remove -a
+gc img batch bg-remove -a -w 800
+```
+
 ---
 
 ## Output Filenames
@@ -341,6 +361,8 @@ gc img batch compress --all --format avif
 **Video:** `{input-name}-{preset}.mp4` — e.g. `demo-social.mp4`
 
 **Image:** `{input-name}-{preset}.{ext}` — e.g. `photo-webp.webp`, `photo-compress.jpg`
+
+**Image (bg-remove):** `{input-name}-bg-remove.png` — e.g. `photo-bg-remove.png`
 
 When `-w` is used, the resolved pixel width is appended: `photo-social-720px.jpg`
 

@@ -12,6 +12,7 @@ import { buildVideoArgs } from "../lib/buildVideoCommand.js";
 import { compressImage } from "../lib/runSharp.js";
 import { runFFmpegAsync, runFFmpegRawAsync, checkFFmpeg, checkCodec, printFFmpegInstallHelp } from "../lib/runFFmpeg.js";
 import { findVideoFiles, findImageFiles } from "../lib/selectFiles.js";
+import { runBgRemoval } from "../lib/runBgRemoval.js";
 
 // ─── Colour helpers ───────────────────────────────────────────────────────────
 
@@ -254,8 +255,9 @@ function showHelp() {
         ? `${Math.round(preset.widthFactor * 100)}% of source`
         : `${preset.width}px`;
     const fmt = preset.format ?? "inherit";
+    const qualityLabel = preset.quality != null ? `quality ${preset.quality}` : "AI model";
     console.log(`  ${green(bold(padded))}  ${dim("→")}  ${preset.label}`);
-    console.log(dim(`  ${"".padEnd(imgNameWidth)}     ${imgDims} · ${fmt} · quality ${preset.quality}`));
+    console.log(dim(`  ${"".padEnd(imgNameWidth)}     ${imgDims} · ${fmt} · ${qualityLabel}`));
     console.log();
   }
 
@@ -278,7 +280,9 @@ function showHelp() {
   console.log(`  ${dim("$")} ${cmd("gc img")} ${arg("photo.jpg webp")}`);
   console.log(`  ${dim("$")} ${cmd("gc img")} ${arg("photo.jpg social")} ${flag("-w 720")}`);
   console.log(`  ${dim("$")} ${cmd("gc img")} ${arg("photo.png compress")} ${flag("--format webp")}`);
+  console.log(`  ${dim("$")} ${cmd("gc img")} ${arg("photo.jpg bg-remove")}`);
   console.log(`  ${dim("$")} ${cmd("gc img batch")} ${arg("webp")}`);
+  console.log(`  ${dim("$")} ${cmd("gc img batch")} ${arg("bg-remove")}`);
   console.log();
 }
 
@@ -323,8 +327,9 @@ function listPresets() {
         ? `${Math.round(preset.widthFactor * 100)}% of source`
         : `${preset.width}px wide`;
     const fmt = preset.format ?? "inherit input format";
+    const qualityLabel = preset.quality != null ? `quality ${preset.quality}` : "AI model";
     console.log(`  ${green(bold(padded))}  ${dim("→")}  ${preset.label}`);
-    console.log(dim(`  ${"".padEnd(imgNameWidth)}     ${dims} · ${fmt} · quality ${preset.quality}`));
+    console.log(dim(`  ${"".padEnd(imgNameWidth)}     ${dims} · ${fmt} · ${qualityLabel}`));
     console.log();
   }
 }
@@ -671,6 +676,7 @@ function resolveImgSettings(presetName, options) {
     widthFactor: hasWidthOverride ? null : (preset.widthFactor ?? null),
     format,
     quality: options.quality ? parseInt(options.quality, 10) : preset.quality,
+    bgRemove: preset.bgRemove ?? false,
   };
 }
 
@@ -687,12 +693,41 @@ async function compressImg(input, presetName, options) {
   const settings = resolveImgSettings(presetName, options);
   const { keepOriginalDimensions, width, widthFactor, format, quality } = settings;
 
+  const ext      = path.extname(input);
+  const basename = path.basename(input, ext);
+  const outDir   = path.dirname(input);
+  const widthSuffix = (options.width && width !== -1) ? `-${width}px` : "";
+
+  if (settings.bgRemove) {
+    const output = options.output ?? path.join(outDir, `${basename}-bg-remove${widthSuffix}.png`);
+
+    console.log();
+    console.log(`  ${dim("Removing background")} ${bold(input)}${dim("...")}`);
+    console.log();
+    console.log(`  ${dim("Mode")}      ${green("img")}`);
+    console.log(`  ${dim("Preset")}    ${green(presetName)}`);
+    console.log(`  ${dim("Output")}    PNG with transparency`);
+    if (width) console.log(`  ${dim("Width")}     ${width}px`);
+    console.log();
+
+    const spinner = startSpinner(`  ${dim("Removing background (downloading AI models on first run)...")}  `);
+
+    try {
+      await runBgRemoval(input, output, width ?? null);
+      spinner.clear();
+    } catch (err) {
+      spinner.clear();
+      console.error(red(`\n  Background removal failed.\n`));
+      console.error(dim(err.message));
+      process.exit(1);
+    }
+
+    console.log(`  ${green("Done")} ${dim("→")} ${bold(output)}\n`);
+    return;
+  }
+
   const inputExt  = path.extname(input).slice(1).toLowerCase();
   const outputExt = format === "jpeg" ? "jpg" : (format ?? inputExt);
-  const ext       = path.extname(input);
-  const basename  = path.basename(input, ext);
-  const outDir    = path.dirname(input);
-  const widthSuffix = (options.width && width !== -1) ? `-${width}px` : "";
   const output    = options.output
     ? options.output
     : path.join(outDir, `${basename}-${presetName}${widthSuffix}.${outputExt}`);
@@ -750,6 +785,50 @@ async function batchImg(presetName, options) {
 
   const total = files.length;
   const widthSuffix = (options.width && width !== -1) ? `-${width}px` : "";
+
+  if (settings.bgRemove) {
+    console.log();
+    console.log(`  ${bold("Batch")} ${green("img")} ${bold(`· ${total} file${total === 1 ? "" : "s"}`)} ${dim("→")} ${green(`Outputs img-${presetName}/`)}`);
+    console.log();
+    console.log(`  ${dim("Preset")}    ${green(presetName)}`);
+    if (options.all) console.log(`  ${dim("Scope")}     subdirectories included`);
+    if (width) console.log(`  ${dim("Width")}     ${width}px`);
+    console.log(`  ${dim("Output")}    PNG with transparency`);
+    console.log(`  ${dim("Note")}      AI models download on first run (~45MB)`);
+    console.log();
+
+    let passed = 0;
+    let failed = 0;
+
+    for (let i = 0; i < files.length; i++) {
+      const file      = files[i];
+      const basename  = path.basename(file, path.extname(file));
+      const relDir    = path.dirname(file);
+      const outputDir = relDir === "." ? outFolder : path.join(outFolder, relDir);
+      if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+      const output    = path.join(outputDir, `${basename}-bg-remove${widthSuffix}.png`);
+      const label     = `  ${dim(`[${i + 1}/${total}]`)} ${file}${dim("...")}  `;
+      const spinner   = startSpinner(label);
+
+      try {
+        await runBgRemoval(path.join(cwd, file), output, width ?? null);
+        spinner.done(green("Done"));
+        passed++;
+      } catch (err) {
+        spinner.done(red("Failed"));
+        console.error(dim(`     ${err.message}`));
+        failed++;
+      }
+    }
+
+    console.log();
+    if (failed === 0) {
+      console.log(`  ${green(bold(`${passed} image${passed === 1 ? "" : "s"} saved`))} ${dim("→")} ${bold(`Outputs img-${presetName}/`)}\n`);
+    } else {
+      console.log(`  ${green(`${passed} saved`)}  ${red(`${failed} failed`)}  ${dim("→")} ${bold(`Outputs img-${presetName}/`)}\n`);
+    }
+    return;
+  }
 
   const batchImgWidthLabel = keepOriginalDimensions
     ? dim("original dimensions")

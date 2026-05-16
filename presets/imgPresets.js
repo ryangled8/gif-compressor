@@ -64,4 +64,11 @@ export default {
     format: null,
     quality: 80,
   },
+
+  "bg-remove": {
+    label: "Remove background using AI — outputs transparent PNG",
+    keepOriginalDimensions: true,
+    format: "png",
+    bgRemove: true,
+  },
 };
