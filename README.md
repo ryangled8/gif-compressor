@@ -360,13 +360,15 @@ gc img batch bg-remove -a -w 800
 
 **Video:** `{input-name}-{preset}.mp4` — e.g. `demo-social.mp4`
 
-**Image:** `{input-name}-{preset}.{ext}` — e.g. `photo-webp.webp`, `photo-compress.jpg`
+**Image (single):** `{input-name}-{preset}.{ext}` — e.g. `photo-webp.webp`, `photo-compress.jpg`
 
-**Image (bg-remove):** `{input-name}-bg-remove.png` — e.g. `photo-bg-remove.png`
+**Image (batch):** `{input-name}.{ext}` — e.g. `photo.webp`. The preset is omitted from the filename because the output folder (`Outputs img-{preset}/`) already names it.
 
-When `-w` is used, the resolved pixel width is appended: `photo-social-720px.jpg`
+**Image (bg-remove):** single is `{input-name}-bg-remove.png`; batch is `{input-name}.png`.
 
-Files are saved in the same directory as the input. Use `-o` to specify a custom path (single-file mode only).
+When `-w` is used, the resolved pixel width is appended: `photo-720px.jpg`
+
+Single-file outputs are saved next to the input (use `-o` for a custom path). Batch outputs go to `Outputs {type}-{preset}/`, mirroring the source directory structure when `--all` is used.
 
 ---
 

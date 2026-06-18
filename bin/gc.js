@@ -163,6 +163,7 @@ function showHelp() {
   console.log(`  ${label(flag("-f, --fps") + " " + arg("<number>"))} Override frames per second`);
   console.log(`  ${label(flag("-c, --colors") + " " + arg("<number>"))} Override palette colours (max 256)`);
   console.log(`  ${label(flag("-d, --dither") + " " + arg("<name>"))} Override dither algorithm`);
+  console.log(`  ${label(flag("-a, --all"))} Recurse into subdirectories ${dim("(batch only)")}`);
   console.log(`  ${label(flag("-o, --output") + " " + arg("<file>"))} Custom output filename ${dim("(single only)")}`);
   console.log();
   console.log(`  ${line}`);
@@ -183,6 +184,7 @@ function showHelp() {
   console.log(`  ${label(flag("--codec") + " " + arg("<name>"))} Override video codec`);
   console.log(`  ${label(flag("--preset") + " " + arg("<name>"))} Override FFmpeg encoder preset`);
   console.log(`  ${label(flag("--audio") + " " + arg("<bitrate>"))} Override audio bitrate (e.g. 192k)`);
+  console.log(`  ${label(flag("-a, --all"))} Recurse into subdirectories ${dim("(batch only)")}`);
   console.log(`  ${label(flag("-o, --output") + " " + arg("<file>"))} Custom output filename ${dim("(single only)")}`);
   console.log();
   console.log(`  ${line}`);
@@ -200,6 +202,7 @@ function showHelp() {
   console.log(`  ${label(flag("-w, --width") + " " + arg("<value>"))} Override width (same formats as GIF)`);
   console.log(`  ${label(flag("-q, --quality") + " " + arg("<number>"))} Override quality (1–100)`);
   console.log(`  ${label(flag("--format") + " " + arg("<name>"))} Override output format: jpg, png, webp, avif`);
+  console.log(`  ${label(flag("-a, --all"))} Recurse into subdirectories ${dim("(batch only)")}`);
   console.log(`  ${label(flag("-o, --output") + " " + arg("<file>"))} Custom output filename ${dim("(single only)")}`);
   console.log();
   console.log(`  ${line}`);
@@ -282,6 +285,7 @@ function showHelp() {
   console.log(`  ${dim("$")} ${cmd("gc img")} ${arg("photo.png compress")} ${flag("--format webp")}`);
   console.log(`  ${dim("$")} ${cmd("gc img")} ${arg("photo.jpg bg-remove")}`);
   console.log(`  ${dim("$")} ${cmd("gc img batch")} ${arg("webp")}`);
+  console.log(`  ${dim("$")} ${cmd("gc img batch")} ${arg("webp")} ${flag("--all")}     ${dim("# include all subfolders")}`);
   console.log(`  ${dim("$")} ${cmd("gc img batch")} ${arg("bg-remove")}`);
   console.log();
 }
@@ -806,7 +810,7 @@ async function batchImg(presetName, options) {
       const relDir    = path.dirname(file);
       const outputDir = relDir === "." ? outFolder : path.join(outFolder, relDir);
       if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
-      const output    = path.join(outputDir, `${basename}-bg-remove${widthSuffix}.png`);
+      const output    = path.join(outputDir, `${basename}${widthSuffix}.png`);
       const label     = `  ${dim(`[${i + 1}/${total}]`)} ${file}${dim("...")}  `;
       const spinner   = startSpinner(label);
 
@@ -857,7 +861,7 @@ async function batchImg(presetName, options) {
     const relDir    = path.dirname(file);
     const outputDir = relDir === "." ? outFolder : path.join(outFolder, relDir);
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
-    const output    = path.join(outputDir, `${basename}-${presetName}${widthSuffix}.${outputExt}`);
+    const output    = path.join(outputDir, `${basename}${widthSuffix}.${outputExt}`);
     const label     = `  ${dim(`[${i + 1}/${total}]`)} ${file}${dim("...")}  `;
     const spinner   = startSpinner(label);
 
