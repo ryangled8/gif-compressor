@@ -905,7 +905,6 @@ program
 const gifCmd = program
   .command("gif")
   .description("Convert a video file to an animated GIF")
-  .passThroughOptions()
   .argument("<input>", "Source video file (e.g. demo.mov)")
   .argument("<preset>", "GIF preset (e.g. medium)")
   .option("-w, --width <value>",   "Override width: 500 | 1/2 | 2x | 0.5x")
@@ -945,7 +944,6 @@ gifCmd
 const videoCmd = program
   .command("vid")
   .description("Compress a video file to MP4")
-  .passThroughOptions()
   .argument("<input>", "Source video file (e.g. demo.mov)")
   .argument("<preset>", "Video preset (e.g. social, compress)")
   .option("-w, --width <value>",   "Override width: 500 | 1/2 | 2x | 0.5x")
@@ -989,7 +987,6 @@ videoCmd
 const imgCmd = program
   .command("img")
   .description("Compress or convert an image")
-  .passThroughOptions()
   .argument("<input>", "Source image file (e.g. photo.jpg)")
   .argument("<preset>", "Image preset (e.g. compress, webp)")
   .option("-w, --width <value>",    "Override width: 500 | 1/2 | 2x | 0.5x")
